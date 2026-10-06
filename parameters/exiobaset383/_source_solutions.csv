@@ -1,0 +1,12 @@
+names;sector_solution;country_solution;stage;order
+gross_output.s.us;gross_output_mp;sum;0;
+compensation.empe.s.us;exiobase/compensation.empe.s.us.R;sum;1;10
+compensation.emp.s.us;exiobase/compensation.emp.s.us.R;sum;1;1
+empe.s.un;exiobase/empe.s.un.R;sum;1;10
+emp.s.un;exiobase/emp.s.un.R;sum;1;1
+gdp.s.us;exiobase/gdp.s.us.R;sum;1;1
+hours_worked.empe.s.hr;exiobase/hours_worked.empe.s.hr.R;sum;1;10
+hours_worked.emp.s.hr;exiobase/hours_worked.emp.s.hr.R;sum;1;1
+profit.s.us;exiobase/profit.s.us.R;sum;1;10
+exchange.r.us;exiobase/exchange.r.us.R;mean;1;10
+capital_stock.s.us;exiobase/capital_stock.s.us.R;sum;1;10
