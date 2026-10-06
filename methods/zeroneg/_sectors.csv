@@ -1,0 +1,36 @@
+sector.source;sector;wiod;productive;euklems.capital;euklems.sector
+AtB;Agriculture, Hunting, Forestry and Fishing;c1;1;K_Cult;A
+C;Mining and Quarrying;c2;1;K_OIPP;B
+15t16;Food, Beverages and Tobacco;c3;1;K_OMach;C10-C12
+17t18;Textiles and Textile Products;c4;1;K_OMach;C13-C15
+19;Leather, Leather and Footwear;c5;1;K_OMach;C13-C15
+20;Wood and Products of Wood and Cork;c6;1;K_OMach;C16-C18
+21t22;Pulp, Paper, Paper , Printing and Publishing;c7;1;K_OMach;C16-C18
+23;Coke, Refined Petroleum and Nuclear Fuel;c8;1;K_OMach;C19
+24;Chemicals and Chemical Products;c9;1;K_OMach;C20_C21
+25;Rubber and Plastics;c10;1;K_OMach;C22_C23
+26;Other Non-Metallic Mineral;c11;1;K_OMach;C31-C33
+27t28;Basic Metals and Fabricated Metal;c12;1;K_OMach;C24_C25
+29;Machinery, Nec;c13;1;K_OMach;C28
+30t33;Electrical and Optical Equipment;c14;1;K_ITCT;C26_C27
+34t35;Transport Equipment;c15;1;K_TraEq;C29_C30
+36t37;"Manufacturing, Nec; Recycling";c16;1;K_OMach;C31-C33
+E;Electricity, Gas and Water Supply;c17;1;K_OMach;D_E
+F;Construction;c18;1;K_RSOC;F
+50;"Sale, Maintenance and Repair of Motor Vehicles and Motorcycles; Retail Sale of Fuel";c19;0;K_OIPP;G45
+51;Wholesale Trade and Commission Trade, Except of Motor Vehicles and Motorcycles;c20;0;K_OIPP;G46
+52;"Retail Trade, Except of Motor Vehicles and Motorcycles; Repair of Household Goods";c21;0;K_OIPP;G47
+H;Hotels and Restaurants;c22;1;K_OCon;I
+60;Inland Transport;c23;1;K_TraEq;H49
+61;Water Transport;c24;1;K_TraEq;H50
+62;Air Transport;c25;1;K_TraEq;H51
+63;"Other Supporting and Auxiliary Transport Activities; Activities of Travel Agencies";c26;0;K_TraEq;H52
+64;Post and Telecommunications;c27;0;K_SoftIPP;H53-J63
+J;Financial Intermediation;c28;0;K_OIPP;K
+70;Real Estate Activities;c29;0;K_OCon;L
+71t74;Renting of M&Eq and Other Business Activities;c30;0;K_RDetc;M_N
+L;"Public Admin and Defence; Compulsory Social Security";c31;0;K_OIPP;O
+M;Education;c32;1;K_OIPP;P
+N;Health and Social Work;c33;1;K_OIPP;Q
+O;Other Community, Social and Personal Services;c34;1;K_OIPP;R_S_U
+P;Private Households with Employed Persons;c35;0;K_RSOC;T
