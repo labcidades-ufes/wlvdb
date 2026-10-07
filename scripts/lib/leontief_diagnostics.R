@@ -725,6 +725,283 @@ wlv_solve_leontief <- function(
   list(lambda = lambda, diagnostics = diagnostics)
 }
 
+wlv_leontief_singularity_profile_columns <- function() {
+  c(
+    "method", "year", "system_orientation", "matrix_scope",
+    "dimension", "qr_rank", "qr_tolerance", "nullity",
+    "dependent_column_count", "dependent_column_fingerprint",
+    "dependent_column_sample",
+    "coefficient_null_row_count", "coefficient_null_column_count",
+    "system_null_row_count", "system_null_column_count",
+    "duplicate_coefficient_row_count", "duplicate_coefficient_column_count",
+    "column_sum_min", "column_sum_max",
+    "zero_value_added_candidate_count", "negative_value_added_candidate_count",
+    "row_sum_max", "spectral_radius_estimate", "spectral_radius_bound",
+    "spectral_radius_converged", "rcond", "rcond_min", "system_norm_inf",
+    "min_norm_residual_max", "eta_normwise_min_norm", "compatible",
+    "classification"
+  )
+}
+
+# Mede o tamanho e a causa da singularidade antes de qualquer tentativa de
+# recuperação (roadmap: docs/leontief-singularity-recovery.md). A singularidade
+# de t(I - C) equivale a um autovalor exatamente 1 de C: tipicamente, um ciclo
+# de setores cuja produção é inteiramente consumida como insumo intermediário
+# (valor adicionado nulo na fonte). Linhas ou colunas nulas de C, sozinhas, não
+# singularizam o sistema; continuam reportadas porque localizam lacunas de
+# cobertura da fonte. Quando trabalho direto é informado, a compatibilidade
+# distingue sistemas resolúveis por métodos sem alteração de dados (resíduo de
+# mínimos quadrados nulo) de sistemas com informação conflitante na fonte.
+wlv_leontief_singularity_profile <- function(
+    coefficient_matrix,
+    labour_requirements = NULL,
+    method,
+    year,
+    policy = NULL) {
+  if (
+    !is.character(method) || length(method) != 1L || is.na(method) ||
+    !nzchar(method) ||
+    length(year) != 1L || is.na(year) || !nzchar(as.character(year))
+  ) {
+    stop(
+      "Leontief singularity profiles require one nonempty method and year.",
+      call. = FALSE
+    )
+  }
+  year <- as.character(year)
+  context <- wlv_leontief_context(method, year)
+  if (
+    !is.matrix(coefficient_matrix) || !is.numeric(coefficient_matrix) ||
+    nrow(coefficient_matrix) != ncol(coefficient_matrix) ||
+    !nrow(coefficient_matrix) ||
+    any(!is.finite(coefficient_matrix))
+  ) {
+    stop(
+      sprintf(
+        "Invalid Leontief coefficients for the singularity profile of %s.",
+        context
+      ),
+      call. = FALSE
+    )
+  }
+  dimension <- nrow(coefficient_matrix)
+  if (
+    !is.null(labour_requirements) &&
+    (!is.numeric(labour_requirements) ||
+      length(labour_requirements) != dimension ||
+      any(!is.finite(labour_requirements)))
+  ) {
+    stop(
+      sprintf(
+        "Invalid direct labour for the singularity profile of %s.",
+        context
+      ),
+      call. = FALSE
+    )
+  }
+  row_labels <- rownames(coefficient_matrix)
+  column_labels <- colnames(coefficient_matrix)
+  if (
+    !is.null(row_labels) && !is.null(column_labels) &&
+    !identical(row_labels, column_labels)
+  ) {
+    stop(
+      sprintf("Leontief row and column labels differ for %s.", context),
+      call. = FALSE
+    )
+  }
+  sector_labels <- if (!is.null(column_labels)) {
+    column_labels
+  } else {
+    row_labels
+  }
+  if (is.null(sector_labels)) {
+    sector_labels <- as.character(seq_len(dimension))
+  }
+  labour_labels <- names(labour_requirements)
+  if (
+    !is.null(labour_labels) && !is.null(column_labels) &&
+    !identical(labour_labels, column_labels)
+  ) {
+    stop(
+      sprintf("Leontief and labour labels differ for %s.", context),
+      call. = FALSE
+    )
+  }
+
+  system_matrix <- t(diag(1, nrow = dimension, ncol = dimension) -
+    coefficient_matrix)
+  numerical_policy <- wlv_leontief_policy(dimension, policy)
+  system_norm_inf <- max(rowSums(abs(system_matrix)))
+  qr_tolerance <- numerical_policy$gamma_n * max(1, system_norm_inf)
+  factorization <- base::qr(system_matrix, tol = qr_tolerance)
+  qr_rank <- as.integer(factorization$rank)
+  nullity <- dimension - qr_rank
+  dependent_indices <- if (nullity > 0L) {
+    sort(factorization$pivot[(qr_rank + 1L):dimension])
+  } else {
+    integer(0L)
+  }
+  dependent_labels <- sector_labels[dependent_indices]
+  dependent_fingerprint <- unclass(tolower(as.character(openssl::md5(
+    charToRaw(enc2utf8(paste(sort(dependent_labels), collapse = "\n")))
+  ))))
+  dependent_sample <- paste(utils::head(sort(dependent_labels), 20L),
+    collapse = "|"
+  )
+
+  coefficient_null_row_count <- sum(rowSums(abs(coefficient_matrix)) == 0)
+  coefficient_null_column_count <- sum(colSums(abs(coefficient_matrix)) == 0)
+  system_null_row_count <- sum(rowSums(abs(system_matrix)) == 0)
+  system_null_column_count <- sum(colSums(abs(system_matrix)) == 0)
+  duplicate_coefficient_row_count <- sum(duplicated(coefficient_matrix))
+  duplicate_coefficient_column_count <- sum(duplicated(t(coefficient_matrix)))
+  column_sums <- colSums(coefficient_matrix)
+  # As tabelas publicadas carregam no máximo oito dígitos significativos por
+  # célula; somas de coluna a menos de 1e-8 de 1 indicam valor adicionado nulo
+  # (produção inteiramente explicada por insumos intermediários).
+  value_added_tolerance <- 1e-8
+  zero_value_added_candidate_count <-
+    sum(column_sums >= 1 - value_added_tolerance)
+  negative_value_added_candidate_count <-
+    sum(column_sums > 1 + value_added_tolerance)
+
+  absolute_coefficients <- abs(coefficient_matrix)
+  row_sum_max <- max(rowSums(absolute_coefficients))
+  spectral_radius_bound <- row_sum_max
+  spectral_radius_estimate <- if (row_sum_max == 0) 0 else NA_real_
+  spectral_radius_converged <- row_sum_max == 0
+  if (!spectral_radius_converged) {
+    radius_state <- rep(1 / dimension, dimension)
+    previous_estimate <- Inf
+    for (iteration in seq_len(200L)) {
+      projected <- as.vector(absolute_coefficients %*% radius_state)
+      estimate <- max(projected)
+      if (!is.finite(estimate)) {
+        spectral_radius_estimate <- NA_real_
+        break
+      }
+      if (estimate <= 0) {
+        spectral_radius_estimate <- 0
+        break
+      }
+      radius_state <- projected / estimate
+      spectral_radius_estimate <- estimate
+      if (abs(estimate - previous_estimate) <=
+        4 * .Machine$double.eps * estimate) {
+        spectral_radius_converged <- TRUE
+        break
+      }
+      previous_estimate <- estimate
+    }
+  }
+
+  reciprocal_condition <- tryCatch(
+    base::rcond(system_matrix, norm = "I"),
+    error = function(error) NA_real_
+  )
+  if (!is.numeric(reciprocal_condition) ||
+    length(reciprocal_condition) != 1L ||
+    is.na(reciprocal_condition)
+  ) {
+    reciprocal_condition <- NA_real_
+  }
+
+  min_norm_residual_max <- NA_real_
+  eta_normwise_min_norm <- NA_real_
+  compatible <- NA
+  least_squares <- NULL
+  if (!is.null(labour_requirements)) {
+    beta <- tryCatch(
+      base::qr.coef(factorization, labour_requirements),
+      error = function(error) NULL
+    )
+    if (!is.null(beta)) {
+      beta[is.na(beta)] <- 0
+      residual <- as.vector(system_matrix %*% beta - labour_requirements)
+      min_norm_residual_max <- max(abs(residual))
+      denominator <-
+        system_norm_inf * max(abs(beta)) + max(abs(labour_requirements))
+      eta_normwise_min_norm <- if (denominator == 0) {
+        if (min_norm_residual_max == 0) 0 else Inf
+      } else {
+        min_norm_residual_max / denominator
+      }
+      compatible <- is.finite(eta_normwise_min_norm) &&
+        eta_normwise_min_norm <= numerical_policy$max_backward_error
+      least_squares <- list(
+        solution = beta,
+        residual = residual,
+        eta_normwise = eta_normwise_min_norm,
+        compatible = compatible
+      )
+    }
+  }
+
+  classification <- if (nullity > 0L) {
+    structural <- zero_value_added_candidate_count > 0 ||
+      negative_value_added_candidate_count > 0 ||
+      coefficient_null_row_count > 0 || coefficient_null_column_count > 0 ||
+      system_null_row_count > 0 || system_null_column_count > 0 ||
+      duplicate_coefficient_row_count > 0 ||
+      duplicate_coefficient_column_count > 0
+    if (structural) "singular_null_structure" else "singular_collinear"
+  } else if (
+    !is.finite(reciprocal_condition) || reciprocal_condition <= 0
+  ) {
+    "singular_collinear"
+  } else if (reciprocal_condition < numerical_policy$rcond_min) {
+    "ill_conditioned"
+  } else {
+    "invertible"
+  }
+
+  profile <- data.frame(
+    method = method,
+    year = year,
+    system_orientation = "t(I - C)",
+    matrix_scope = "coefficient_block",
+    dimension = dimension,
+    qr_rank = qr_rank,
+    qr_tolerance = qr_tolerance,
+    nullity = nullity,
+    dependent_column_count = length(dependent_indices),
+    dependent_column_fingerprint = dependent_fingerprint,
+    dependent_column_sample = dependent_sample,
+    coefficient_null_row_count = coefficient_null_row_count,
+    coefficient_null_column_count = coefficient_null_column_count,
+    system_null_row_count = system_null_row_count,
+    system_null_column_count = system_null_column_count,
+    duplicate_coefficient_row_count = duplicate_coefficient_row_count,
+    duplicate_coefficient_column_count = duplicate_coefficient_column_count,
+    column_sum_min = min(column_sums),
+    column_sum_max = max(column_sums),
+    zero_value_added_candidate_count = zero_value_added_candidate_count,
+    negative_value_added_candidate_count = negative_value_added_candidate_count,
+    row_sum_max = row_sum_max,
+    spectral_radius_estimate = spectral_radius_estimate,
+    spectral_radius_bound = spectral_radius_bound,
+    spectral_radius_converged = spectral_radius_converged,
+    rcond = reciprocal_condition,
+    rcond_min = numerical_policy$rcond_min,
+    system_norm_inf = system_norm_inf,
+    min_norm_residual_max = min_norm_residual_max,
+    eta_normwise_min_norm = eta_normwise_min_norm,
+    compatible = compatible,
+    classification = classification,
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+  profile <- profile[wlv_leontief_singularity_profile_columns()]
+
+  list(
+    profile = profile,
+    dependent_indices = dependent_indices,
+    dependent_columns = dependent_labels,
+    least_squares = least_squares
+  )
+}
+
 wlv_validate_leontief_diagnostic_artifact <- function(
     diagnostics,
     method = NULL,

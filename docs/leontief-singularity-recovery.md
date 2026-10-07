@@ -81,6 +81,29 @@ Aceitação: para cada ano problemático, o perfil reporta `k`, `n - k`, as
 coordenadas (país/setor) envolvidas e a causa; a falha deixa de ser uma
 mensagem genérica.
 
+Situação (branch `agent/leontief-singularity-recovery`):
+
+- `wlv_leontief_singularity_profile()` implementada em
+  `scripts/lib/leontief_diagnostics.R`, com artifact de uma linha por
+  método/ano (colunas declaradas em `wlv_leontief_singularity_profile_columns()`)
+  e classificação em `invertible`, `ill_conditioned`, `singular_collinear` e
+  `singular_null_structure`.
+- Casos sintéticos cobertos inline em
+  `tests/testthat/test-leontief-singularity-profile.R` (109 asserções
+  aprovadas junto aos testes de Leontief existentes); fixtures em arquivos
+  separados ficam para quando os casos reais da EXIOBASE forem reduzidos a
+  exemplos mínimos.
+- Achado que refina as hipóteses: linhas nulas, colunas nulas e colunas
+  duplicadas de `C` **não** singularizam `t(I - C)` (verificado algébrica e
+  empiricamente). A singularidade exata equivale a um autovalor 1 de `C`,
+  tipicamente um ciclo de setores com valor adicionado nulo (soma da coluna
+  de `C` igual a 1). O perfil reporta esses candidatos, o raio espectral
+  estimado por iteração de potências sobre `|C|` e a compatibilidade do
+  sistema com o vetor de trabalho direto (via resíduo de mínimos quadrados).
+- Pendente: campanha de diagnóstico (criação via `scripts/manage-campaigns.ps1`
+  requer PowerShell, ausente neste ambiente Linux) e o re-download da
+  EXIOBASE 3.9.5.
+
 ## 4. Fase 1 - Caminho A: resolver sem alterar os dados fontes
 
 - A0. Equilíbrio numérico (scaling): reescalar linhas/colunas da matriz do
@@ -147,7 +170,7 @@ zero.
 
 | Marco | Conteúdo | Gatilho |
 |-------|----------|---------|
-| M0 | Fase 0 completa: ferramenta de perfil + campanha de diagnóstico + fixtures | sempre |
+| M0 | Fase 0: ferramenta de perfil + campanha de diagnóstico + casos sintéticos | sempre (ferramenta e testes prontos; campanha pendente) |
 | M1 | A0 + A1 + A3 (`structural`) + testes | sempre |
 | M2 | A2 (`minimum_norm`) + benchmark de custo | se M0 mostrar colinearidades que A1 não cobrir ou custo aceitável |
 | M3 | B1/B2 com perfis auditados | somente se M0 detectar incompatibilidade real |
