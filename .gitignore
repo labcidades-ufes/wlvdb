@@ -25,3 +25,6 @@ source_datax
 /renv/local/
 /renv/staging/
 /renv/cellar/
+
+# Local notes not meant for version control
+docs/*.local.md
