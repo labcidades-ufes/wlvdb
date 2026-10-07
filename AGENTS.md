@@ -1,6 +1,7 @@
 # Organização local e campanhas
 
 - Escreva em português com acentos e preserve Unicode/UTF-8.
+- No início ou na retomada de cada sessão, sincronize com o remoto (`git fetch`/`git pull`), pois outras frentes da equipe podem ter avançado o desenvolvimento. Se a porta 22 estiver inacessível, use o espelho HTTPS somente-leitura: `git pull https://gitlab.com/rodrigoesborges/worldlabourvalues.git <branch>`.
 - Todos os experimentos, benchmarks, campanhas, provas manuais, cópias de trabalho temporárias do Git e respectivos dados, resultados e logs devem ficar em `temp/<id>/`, dentro deste repositório. `temp/` é ignorado pelo Git.
 - Nunca crie campanhas em pastas irmãs `wlvdb-*`, na raiz de volumes, em AppData ou em diretórios temporários externos. Não use outro volume como alternativa silenciosa quando faltar espaço: limpe campanhas encerradas ou interrompa a execução e informe a necessidade.
 - Crie a campanha com `scripts/manage-campaigns.ps1 -Action New -Id <id>`. Use `worktrees/`, `scratch/`, `logs/` e `results/` dentro da pasta criada. Ao lançar R, Python ou outras ferramentas, direcione `TEMP`, `TMP` e `TMPDIR` para o `scratch/` da campanha. Configure todos os caminhos de saída explicitamente.
