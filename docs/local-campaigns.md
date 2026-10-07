@@ -20,13 +20,14 @@ para derivação ou reconstrução na revisão original. Seus caminhos internos
 históricos não são comandos para executar no checkout atual. Novos logs
 continuam obrigatoriamente em `temp/<id>/logs/`.
 
-Os comandos de gerenciamento requerem PowerShell 7.5 ou posterior.
-`New`, `Status`, `Complete` e `Fail` são utilizáveis também no Ubuntu com
-PowerShell instalado. `Clean` usa `Get-CimInstance Win32_Process` para impedir
-a exclusão de campanhas em uso e requer Windows; não se deve contornar essa
-verificação no Ubuntu. Os runners hospedados da CI encerram o registro e
-descartam a campanha com o checkout após o job. Essa limpeza automática do
-runner não representa suporte de `Clean` no Linux.
+No Windows, os comandos de gerenciamento requerem PowerShell 7.5 ou posterior
+(`scripts/*.ps1`). No Linux, use os equivalentes em bash: `scripts/manage-campaigns.sh`,
+`scripts/run-experiment.sh` e `scripts/campaign-paths.sh` cobrem todas as
+ações, inclusive `Clean`. A verificação de processos em uso usa
+`/proc/*/cmdline` no lugar de `Get-CimInstance Win32_Process`. Os manifests
+`.campaign.json` e a pasta `temp/` são compartilhados entre os dois ambientes:
+o formato escrito por uma ferramenta é lido pela outra. Os runners hospedados
+ da CI continuam usando os scripts `.ps1`.
 
 ## Criar e executar
 
@@ -34,6 +35,12 @@ Para preparar uma campanha composta de várias etapas, na raiz do projeto:
 
 ```powershell
 pwsh -File scripts/manage-campaigns.ps1 -Action New -Id teste-055 -Purpose 'Comparação de desempenho'
+```
+
+No Linux, o equivalente é:
+
+```bash
+bash scripts/manage-campaigns.sh -Action New -Id teste-055 -Purpose 'Comparação de desempenho'
 ```
 
 O comando cria `worktrees/`, `scratch/`, `logs/` e `results/`, além de
@@ -47,6 +54,13 @@ filhos direcionados para dentro dela:
 ./scripts/run-experiment.ps1 -Id teste-056 -Executable Rscript `
   -ArgumentList @('--vanilla', 'scripts/benchmark_leontief.R') `
   -Purpose 'Benchmark Leontief' -Preserve
+```
+
+No Linux, os argumentos do programa vão depois de `--`:
+
+```bash
+bash scripts/run-experiment.sh -Id teste-056 -Purpose 'Benchmark Leontief' -Preserve \
+  -Executable Rscript -- --vanilla scripts/benchmark_leontief.R
 ```
 
 O executor configura `TEMP`, `TMP`, `TMPDIR` e `WLV_CAMPAIGN_ROOT`, captura o log
@@ -69,6 +83,14 @@ Depois de encerrar os processos e revisar os resultados:
 pwsh -File scripts/manage-campaigns.ps1 -Action Complete -Id teste-055
 pwsh -File scripts/manage-campaigns.ps1 -Action Clean
 pwsh -File scripts/manage-campaigns.ps1 -Action Clean -Apply
+```
+
+No Linux:
+
+```bash
+bash scripts/manage-campaigns.sh -Action Complete -Id teste-055
+bash scripts/manage-campaigns.sh -Action Clean
+bash scripts/manage-campaigns.sh -Action Clean -Apply
 ```
 
 Use `Fail` para uma campanha abandonada ou reprovada. Use `-Preserve` em `New`,

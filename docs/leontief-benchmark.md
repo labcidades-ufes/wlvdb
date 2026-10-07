@@ -17,11 +17,19 @@ O comando de referência é:
     '--repetitions', '5', '--poll-ms', '25') -Preserve
 ```
 
+No Linux, o equivalente em bash é (argumentos do programa após `--`):
+
+```bash
+bash scripts/run-experiment.sh -Id leontief-055 -Executable Rscript -Preserve \
+  -- --vanilla scripts/benchmark_leontief.R --method wiodr16 --channel stable \
+  --year 2013 --repetitions 5 --poll-ms 25
+```
+
 O lançador cria `temp/leontief-055/`, configura os temporários dos processos
 filhos e grava os resultados em `results/leontief-benchmark/` dentro da campanha.
 O identificador deve ser novo; consulte `local-campaigns.md` para encerrar e limpar
-campanhas. Fora do Windows, registre uma campanha equivalente e configure
-`WLV_CAMPAIGN_ROOT`, `TEMP`, `TMP` e `TMPDIR` antes de iniciar R. O script requer
+campanhas. No Linux, o lançador em bash acima registra a campanha
+automaticamente. O script requer
 `fst`, `jsonlite` e `processx`. Ele não usa
 `ps` diretamente; `ps` pode aparecer como dependência transitiva de
 `processx`.

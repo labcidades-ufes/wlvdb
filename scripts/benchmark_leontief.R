@@ -121,7 +121,7 @@ Sys.setenv(RENV_PROJECT = project_root)
 source(file.path(project_root, "renv", "activate.R"), local = TRUE)
 campaign_root <- Sys.getenv("WLV_CAMPAIGN_ROOT", "")
 if (!nzchar(campaign_root) || !dir.exists(campaign_root)) {
-  stop("Launch benchmarks with scripts/run-experiment.ps1 inside temp/<id>/.", call. = FALSE)
+  stop("Launch benchmarks with scripts/run-experiment.ps1 (or scripts/run-experiment.sh on Linux) inside temp/<id>/.", call. = FALSE)
 }
 campaign_root <- normalizePath(campaign_root, winslash = "/", mustWork = TRUE)
 campaign_parent <- normalizePath(file.path(project_root, "temp"), winslash = "/", mustWork = TRUE)

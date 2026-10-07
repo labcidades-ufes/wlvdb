@@ -70,7 +70,8 @@ Entregas:
     entre setores, (c) sistema incompatível (resíduo de mínimos quadrados
     diferente de zero), (d) apenas mal-condicionado, (e) inversível.
 - Campanha de diagnóstico em `temp/<id>/` criada com
-  `scripts/manage-campaigns.ps1 -Action New -Id <id>`: download da EXIOBASE
+  `scripts/manage-campaigns.ps1 -Action New -Id <id>` (no Linux,
+  `scripts/manage-campaigns.sh`): download da EXIOBASE
   3.9.5 pelas URLs do script de preparação e execução apenas do perfil por
   ano (sem rodar o pipeline completo), gravando `_singular_profile.csv`
   em `temp/<id>/results/`.
@@ -100,9 +101,11 @@ Situação (branch `agent/leontief-singularity-recovery`):
   de `C` igual a 1). O perfil reporta esses candidatos, o raio espectral
   estimado por iteração de potências sobre `|C|` e a compatibilidade do
   sistema com o vetor de trabalho direto (via resíduo de mínimos quadrados).
-- Pendente: campanha de diagnóstico (criação via `scripts/manage-campaigns.ps1`
-  requer PowerShell, ausente neste ambiente Linux) e o re-download da
-  EXIOBASE 3.9.5.
+- Pendente: campanha de diagnóstico e o re-download da EXIOBASE
+  3.9.5. O bloqueio do PowerShell foi resolvido com os equivalentes em bash
+  (`scripts/manage-campaigns.sh`, `scripts/run-experiment.sh` e
+  `scripts/campaign-paths.sh`, validados por `tests/manual/test-campaign-storage.sh`);
+  resta concluir o download das fontes.
 
 ## 4. Fase 1 - Caminho A: resolver sem alterar os dados fontes
 

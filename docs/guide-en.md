@@ -566,6 +566,17 @@ campaign and set `TEMP`, `TMP`, `TMPDIR` before starting R, as described in
 open `pwsh` at the repository root and run the block below. Windows PowerShell
 5.1 does not satisfy the requirement. The same creation block works on Ubuntu
 with PowerShell installed; `$campaign` receives an object, not a line of text.
+On Linux without PowerShell, the bash equivalent prints `key=value` lines
+(use `root=` and `temporary_directory=`) and the block becomes:
+
+```bash
+campaign=$(bash scripts/manage-campaigns.sh -Action New -Id local-check \
+  -Purpose 'Local unit and synthetic integration checks')
+root=$(printf '%s\n' "$campaign" | sed -n 's/^root=//p')
+scratch=$(printf '%s\n' "$campaign" | sed -n 's/^temporary_directory=//p')
+export TEMP="$scratch" TMP="$scratch" TMPDIR="$scratch" WLV_CAMPAIGN_ROOT="$root"
+R --vanilla
+```
 
 ```powershell
 $campaign = ./scripts/manage-campaigns.ps1 -Action New -Id local-check -Purpose 'Local unit and synthetic integration checks'

@@ -570,6 +570,17 @@ conforme [campanhas locais](local-campaigns.md). Instale
 abra `pwsh` na raiz do repositório e execute o bloco abaixo. Windows PowerShell
 5.1 não atende ao requisito. O mesmo bloco de criação funciona no Ubuntu com
 PowerShell instalado; `$campaign` recebe um objeto, não uma linha de texto.
+No Linux sem PowerShell, o equivalente em bash devolve linhas `chave=valor`
+(use `root=` e `temporary_directory=`) e o bloco fica:
+
+```bash
+campaign=$(bash scripts/manage-campaigns.sh -Action New -Id local-check \
+  -Purpose 'Local unit and synthetic integration checks')
+root=$(printf '%s\n' "$campaign" | sed -n 's/^root=//p')
+scratch=$(printf '%s\n' "$campaign" | sed -n 's/^temporary_directory=//p')
+export TEMP="$scratch" TMP="$scratch" TMPDIR="$scratch" WLV_CAMPAIGN_ROOT="$root"
+R --vanilla
+```
 
 ```powershell
 $campaign = ./scripts/manage-campaigns.ps1 -Action New -Id local-check -Purpose 'Local unit and synthetic integration checks'
