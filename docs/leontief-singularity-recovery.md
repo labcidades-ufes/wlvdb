@@ -26,11 +26,13 @@ Branch: `agent/leontief-singularity-recovery` (criado a partir de `master`).
   catálogo como experimental com "recovery pending" (`catalog/sources.csv`).
   O arquivo `_leontief_diagnostics.csv` e a mensagem de erro exata do ano que
   falhou devem ser preservados na primeira campanha de diagnóstico.
-- Dimensão esperada do sistema: cerca de 9.800 setores (49 regiões x 200 setores
-  na variante ixi). Uma matriz densa dessa ordem ocupa ~0,75 GB; SVD e múltiplas
+- Dimensão real do sistema na EXIOBASE 3.9.5 ixi: 163 ramos x 49 regiões =
+  7.987 setores (a estimativa anterior, 9.800, vale para a variante pxp com
+  200 produtos). Uma matriz densa dessa ordem ocupa ~0,5 GB; SVD e múltiplas
   cópias multiplicam esse custo (ver Fase 3, benchmark).
-- Estado dos dados locais: as pastas `source_data/exiobase*` estão vazias neste
-  volume; a reprodução exige novo download (conforme o script de preparação).
+- Estado dos dados locais: fontes 3.9.5 preparadas restauradas em
+  `source_data/exiobase395/` (fst `m_io_1995..2022` + `sea.fst`, sidecars
+  legados, cerca de 9,3 GB), confirmadas pela campanha M0.
 - Branch `singularity_c`: local e remoto apontam para `724b61a`, commit já contido
   no histórico de `master`. Não há trabalho versionado novo nessa frente.
   Trabalho não commitado pode existir em `borges@38.242.154.34:~/pRojetos/`
@@ -101,11 +103,24 @@ Situação (branch `agent/leontief-singularity-recovery`):
   de `C` igual a 1). O perfil reporta esses candidatos, o raio espectral
   estimado por iteração de potências sobre `|C|` e a compatibilidade do
   sistema com o vetor de trabalho direto (via resíduo de mínimos quadrados).
-- Pendente: campanha de diagnóstico e o re-download da EXIOBASE
-  3.9.5. O bloqueio do PowerShell foi resolvido com os equivalentes em bash
-  (`scripts/manage-campaigns.sh`, `scripts/run-experiment.sh` e
-  `scripts/campaign-paths.sh`, validados por `tests/manual/test-campaign-storage.sh`);
-  resta concluir o download das fontes.
+- Campanha M0 concluída (`temp/exiobase395-singularity/`, driver versionado em
+  `tests/manual/exiobase395-singularity-profile.R`): perfil fonte C = Z/x por
+  ano, 1995-2022, 7.987 setores. **Resultado: os 28 anos são `invertible` no
+  nível da fonte** (nulidade 0 em todos; `rcond` entre 7,5e-4 e 1,0e-1, bem
+  acima de `rcond_min` ~ 1,8e-4; raio espectral de |C| entre 0,67 e 0,92;
+  sistemas compatíveis com o vetor de trabalho, `compatible = TRUE`).
+  Setores com valor adicionado nulo (112-191/ano) e colunas zeradas por
+  produção nula (~1.600-1.700/ano) existem, mas não singularizam `t(I - C)`,
+  conforme a análise teórica. Conclusão: a singularidade que bloqueia o
+  pipeline é introduzida após a fonte, candidatas na ordem de suspeita:
+  (i) a camada `k_depreciation` somada ao numerador por
+  `matrix.transformation` (scripts/modules/native/matrix_modules.R), que pode
+  levar somas de coluna a exatamente 1 (autovalor 1 de C); (ii) o filtro do
+  bloco produtivo; (iii) diferenças entre `gross_output.s.us` (SEA) e o
+  `gross_output_mp` implícito na fonte (nulas na fonte, conforme campanha).
+- Próximo passo (M0b): repetir o perfil com o numerador do pipeline
+  (Z + k_depreciação) e o `gross_output.s.us` vigente, para isolar a camada
+  responsável antes de desenhar o Caminho A da Fase 1.
 
 ## 4. Fase 1 - Caminho A: resolver sem alterar os dados fontes
 
@@ -173,7 +188,7 @@ zero.
 
 | Marco | Conteúdo | Gatilho |
 |-------|----------|---------|
-| M0 | Fase 0: ferramenta de perfil + campanha de diagnóstico + casos sintéticos | sempre (ferramenta e testes prontos; campanha pendente) |
+| M0 | Fase 0: ferramenta de perfil + campanha de diagnóstico + casos sintéticos | concluído (fonte invertível; M0b pendente para a camada do pipeline) |
 | M1 | A0 + A1 + A3 (`structural`) + testes | sempre |
 | M2 | A2 (`minimum_norm`) + benchmark de custo | se M0 mostrar colinearidades que A1 não cobrir ou custo aceitável |
 | M3 | B1/B2 com perfis auditados | somente se M0 detectar incompatibilidade real |
@@ -194,6 +209,8 @@ zero.
   `wlvdbaj`, inspecionar `~/pRojetos/worldlabourvalues` e `~/pRojetos/wiodvalues`
   com `git status`/`git stash list`; se houver trabalho útil, trazer como patch
   para este branch. O acesso direto por SSH não está disponível neste ambiente.
-- Repor os downloads da EXIOBASE 3.9.5 (pastas `source_data/exiobase*` vazias)
-  dentro da campanha da Fase 0, respeitando a política de campanhas
-  (`docs/local-campaigns.md`).
+- Repor os downloads da EXIOBASE 3.9.5: resolvido; as fontes preparadas estão
+  de volta em `source_data/exiobase395/` e a campanha M0 já as consumiu.
+- M0b: perfilar a matriz de coeficientes efetivamente usada pelo pipeline
+  (Z + `k_depreciation`, bloco produtivo, `gross_output.s.us`) por ano da
+  3.9.5, reaproveitando o driver da campanha M0.
